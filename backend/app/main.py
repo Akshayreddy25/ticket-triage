@@ -5,6 +5,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.db.session import engine, Base
 from app.api.tickets import router as tickets_router
+from app.api.simulate import router as simulate_router
 
 def create_tables():
     retries = 5
@@ -37,6 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(tickets_router, prefix=settings.API_PREFIX)
+app.include_router(simulate_router, prefix=settings.API_PREFIX)
 
 @app.get("/health")
 def health_check():
