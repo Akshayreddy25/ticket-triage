@@ -18,6 +18,20 @@ export interface Ticket {
   updated_at: string
 }
 
+export interface Prediction {
+  predicted_category: string
+  category_confidence: number
+  predicted_urgency: string
+  urgency_confidence: number
+  recommended_team: string
+  routing_mode: string
+}
+
+export interface TicketWithPrediction {
+  ticket: Ticket
+  prediction: Prediction
+}
+
 export interface CreateTicketData {
   subject: string
   description: string
@@ -26,7 +40,7 @@ export interface CreateTicketData {
 
 export const ticketApi = {
   create: (data: CreateTicketData) =>
-    api.post<Ticket>('/tickets/', data),
+    api.post<TicketWithPrediction>('/tickets/', data),
   list: () =>
     api.get<{ tickets: Ticket[]; total: number }>('/tickets/'),
   get: (id: string) =>
