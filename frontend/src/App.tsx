@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import SubmitTicket from './pages/SubmitTicket'
 import TicketList from './pages/TicketList'
 import TicketDetail from './pages/TicketDetail'
+import Evaluation from './pages/Evaluation'
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const token = getStoredToken()
@@ -24,6 +25,7 @@ function App() {
         <Route path="/tickets" element={<PrivateRoute><TicketList /></PrivateRoute>} />
         <Route path="/tickets/:id" element={<PrivateRoute><TicketDetail /></PrivateRoute>} />
         <Route path="/submit" element={<PrivateRoute><SubmitTicket /></PrivateRoute>} />
+        <Route path="/evaluation" element={<PrivateRoute><Evaluation /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )

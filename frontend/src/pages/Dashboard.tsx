@@ -86,6 +86,7 @@ export default function Dashboard() {
           <h1 className="text-lg font-semibold text-gray-800">Ticket Triage</h1>
           <button onClick={() => navigate('/tickets')} className="text-sm text-gray-500 hover:text-gray-800">All Tickets</button>
           <button onClick={() => navigate('/submit')} className="text-sm text-gray-500 hover:text-gray-800">Submit Ticket</button>
+          <button onClick={() => navigate('/evaluation')} className="text-sm text-gray-500 hover:text-gray-800">Evaluation</button>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500">{user.full_name} - {user.role}</span>
