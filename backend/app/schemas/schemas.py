@@ -41,3 +41,43 @@ class TicketWithPrediction(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    role: Optional[str] = "agent"
+    team: Optional[str] = None
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: str
+    full_name: str
+    role: str
+    team: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+class FeedbackCreate(BaseModel):
+    ticket_id: UUID
+    actual_category: str
+    actual_urgency: str
+    routing_correct: bool
+    feedback_notes: Optional[str] = None
+
+class FeedbackResponse(BaseModel):
+    id: UUID
+    ticket_id: UUID
+    actual_category: str
+    actual_urgency: str
+    routing_correct: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
