@@ -16,15 +16,6 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 1440
 
-  - type: web
-    name: ticket-triage-frontend
-    runtime: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/build
-    envVars:
-      - key: REACT_APP_API_URL
-        value: https://ticket-triage-backend.onrender.com
-
 databases:
   - name: ticket-triage-db
     plan: free
