@@ -17,3 +17,6 @@ joblib==1.5.3
 numpy==1.26.4
 pandas==2.2.2
 datasets==2.19.1
+pgvector==0.2.5
+sentence-transformers==2.7.0
+ollama==0.2.1

@@ -5,10 +5,12 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.db.session import engine, Base
 from app.api.tickets import router as tickets_router
+from app.models.rag_models import TicketEmbedding, DraftResponse
 from app.api.auth import router as auth_router
 from app.api.feedback import router as feedback_router
 from app.api.dashboard import router as dashboard_router
 from app.api.simulate import router as simulate_router
+from app.api.rag import router as rag_router
 
 def create_tables():
     retries = 5
@@ -45,6 +47,7 @@ app.include_router(auth_router, prefix=settings.API_PREFIX)
 app.include_router(feedback_router, prefix=settings.API_PREFIX)
 app.include_router(dashboard_router, prefix=settings.API_PREFIX)
 app.include_router(simulate_router, prefix=settings.API_PREFIX)
+app.include_router(rag_router, prefix=settings.API_PREFIX)
 
 @app.get("/health")
 def health_check():

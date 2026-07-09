@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ticketApi, feedbackApi, Ticket, setToken } from '../services/api'
+import axios from 'axios'
+
+const api = axios.create({ baseURL: 'http://localhost:8000/api/v1' })
 
 const statusColors: Record<string, string> = {
   new: 'bg-blue-100 text-blue-700',
@@ -34,6 +37,20 @@ function ConfidenceBar({ value, label }: { value: number; label: string }) {
   )
 }
 
+interface SimilarTicket {
+  ticket_id: string
+  content: string
+  resolution: string
+  category: string
+  similarity: number
+}
+
+interface DraftResult {
+  draft: string
+  similar_tickets: SimilarTicket[]
+  citations: string[]
+}
+
 export default function TicketDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -43,6 +60,9 @@ export default function TicketDetail() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
   const [feedbackDone, setFeedbackDone] = useState(false)
+  const [draft, setDraft] = useState<DraftResult | null>(null)
+  const [draftLoading, setDraftLoading] = useState(false)
+  const [draftOutcome, setDraftOutcome] = useState('')
   const [feedback, setFeedback] = useState({
     actual_category: '',
     actual_urgency: '',
@@ -52,7 +72,10 @@ export default function TicketDetail() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (token) setToken(token)
+    if (token) {
+      setToken(token)
+      api.defaults.headers.common['Authorization'] = 'Bearer ' + token
+    }
     if (!id) return
     ticketApi.get(id)
       .then(res => {
@@ -66,6 +89,29 @@ export default function TicketDetail() {
       .catch(() => setError('Ticket not found'))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleGenerateDraft = async () => {
+    if (!ticket) return
+    setDraftLoading(true)
+    try {
+      const res = await api.post('/rag/draft/' + ticket.id)
+      setDraft(res.data)
+    } catch (err) {
+      alert('Failed to generate draft')
+    } finally {
+      setDraftLoading(false)
+    }
+  }
+
+  const handleDraftOutcome = async (outcome: string) => {
+    if (!ticket) return
+    try {
+      await api.post('/rag/draft/' + ticket.id + '/outcome', { outcome })
+      setDraftOutcome(outcome)
+    } catch (err) {
+      console.error('Failed to record outcome')
+    }
+  }
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -116,9 +162,7 @@ export default function TicketDetail() {
       </nav>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline mb-6 block">
-          Back
-        </button>
+        <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline mb-6 block">Back</button>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -167,17 +211,100 @@ export default function TicketDetail() {
               <ConfidenceBar value={0.99} label={ticket.category.replace('_', ' ')} />
               <ConfidenceBar value={0.96} label={ticket.urgency || 'medium'} />
               <div className="pt-2 border-t border-gray-100">
-                <p className="text-xs text-gray-500">
-                  Routed to <span className="font-medium text-gray-700">{ticket.assigned_team}</span>
-                </p>
+                <p className="text-xs text-gray-500">Routed to <span className="font-medium text-gray-700">{ticket.assigned_team}</span></p>
               </div>
             </div>
           </div>
         )}
 
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">RAG Draft Response</h2>
+            {!draft && (
+              <button
+                onClick={handleGenerateDraft}
+                disabled={draftLoading}
+                className="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-md hover:bg-purple-700 disabled:opacity-50"
+              >
+                {draftLoading ? 'Generating...' : 'Generate draft'}
+              </button>
+            )}
+          </div>
+
+          {!draft && !draftLoading && (
+            <p className="text-sm text-gray-500">Click generate to create an AI draft response based on similar resolved tickets.</p>
+          )}
+
+          {draftLoading && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="animate-spin h-4 w-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+              Searching similar tickets and generating response...
+            </div>
+          )}
+
+          {draft && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{draft.draft}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Based on {draft.similar_tickets.length} similar resolved tickets</p>
+                <div className="space-y-2">
+                  {draft.similar_tickets.map((t, i) => (
+                    <div key={t.ticket_id} className="flex items-start gap-2 text-xs text-gray-500">
+                      <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0">
+                        {Math.round(t.similarity * 100)}%
+                      </span>
+                      <span className="truncate">{t.content.slice(0, 80)}...</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {!draftOutcome && (
+                <div className="flex gap-3 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => handleDraftOutcome('accepted')}
+                    className="text-sm bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700"
+                  >
+                    Accept draft
+                  </button>
+                  <button
+                    onClick={() => handleDraftOutcome('minor_edit')}
+                    className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600"
+                  >
+                    Accept with edits
+                  </button>
+                  <button
+                    onClick={() => handleDraftOutcome('rejected')}
+                    className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={handleGenerateDraft}
+                    className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5"
+                  >
+                    Regenerate
+                  </button>
+                </div>
+              )}
+
+              {draftOutcome && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm text-green-700 font-medium">
+                    Outcome recorded: {draftOutcome.replace('_', ' ')}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {feedbackDone && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-green-700 font-medium">Feedback submitted successfully. This helps improve future predictions.</p>
+            <p className="text-sm text-green-700 font-medium">Feedback submitted successfully.</p>
           </div>
         )}
 
@@ -185,28 +312,22 @@ export default function TicketDetail() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">Agent feedback</h2>
             {!showFeedback && !feedbackDone && (
-              <button
-                onClick={() => setShowFeedback(true)}
-                className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700"
-              >
+              <button onClick={() => setShowFeedback(true)}
+                className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700">
                 Correct classification
               </button>
             )}
           </div>
-
           {!showFeedback && !feedbackDone && (
             <p className="text-sm text-gray-500">Was the AI classification correct? Submit feedback to improve future predictions.</p>
           )}
-
           {showFeedback && (
             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Correct category</label>
-                <select
-                  value={feedback.actual_category}
+                <select value={feedback.actual_category}
                   onChange={e => setFeedback({...feedback, actual_category: e.target.value})}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="billing">Billing</option>
                   <option value="refund">Refund</option>
                   <option value="technical">Technical</option>
@@ -217,11 +338,9 @@ export default function TicketDetail() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Correct urgency</label>
-                <select
-                  value={feedback.actual_urgency}
+                <select value={feedback.actual_urgency}
                   onChange={e => setFeedback({...feedback, actual_urgency: e.target.value})}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
@@ -232,25 +351,20 @@ export default function TicketDetail() {
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="radio" checked={feedback.routing_correct}
-                      onChange={() => setFeedback({...feedback, routing_correct: true})} />
-                    Yes
+                      onChange={() => setFeedback({...feedback, routing_correct: true})} /> Yes
                   </label>
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="radio" checked={!feedback.routing_correct}
-                      onChange={() => setFeedback({...feedback, routing_correct: false})} />
-                    No
+                      onChange={() => setFeedback({...feedback, routing_correct: false})} /> No
                   </label>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Notes (optional)</label>
-                <textarea
-                  rows={2}
-                  value={feedback.feedback_notes}
+                <textarea rows={2} value={feedback.feedback_notes}
                   onChange={e => setFeedback({...feedback, feedback_notes: e.target.value})}
                   placeholder="Any additional context..."
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="flex gap-3">
                 <button type="submit" disabled={feedbackSubmitting}
