@@ -144,10 +144,6 @@ ticket-triage/
 └── docker-compose.yml
 ```
 
-## Resume Bullet
-
-Built and deployed a full-stack AI customer support platform using React, FastAPI, PostgreSQL, and scikit-learn. Trained a TF-IDF + Logistic Regression classifier on 23,907 labeled examples achieving 99%+ F1 across 6 categories. Seeded 8,469 real support tickets from Kaggle dataset. Implemented confidence-aware routing with automatic, suggested, and manual tiers. Integrated human feedback loop and evaluation dashboard tracking routing accuracy and model performance.
-
 ## Roadmap
 
 - [ ] Cloud deployment
