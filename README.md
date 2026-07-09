@@ -143,12 +143,3 @@ ticket-triage/
 │       └── services/   # API client, auth utilities
 └── docker-compose.yml
 ```
-
-## Roadmap
-
-- [ ] Cloud deployment
-- [ ] CI/CD pipeline with GitHub Actions
-- [ ] pgvector similar ticket retrieval
-- [ ] LLM-generated response drafts with citations
-- [ ] RAG evaluation and draft acceptance tracking
-- [ ] DistilBERT upgrade for production-grade classification
