@@ -18,6 +18,7 @@ export default function Evaluation() {
   const navigate = useNavigate()
   const [stats, setStats] = useState<Stats | null>(null)
   const [feedbackStats, setFeedbackStats] = useState<any>(null)
+  const [ragStats, setRagStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,10 +28,12 @@ export default function Evaluation() {
     api.defaults.headers.common['Authorization'] = 'Bearer ' + token
     Promise.all([
       api.get('/dashboard/stats'),
-      api.get('/feedback/stats')
-    ]).then(([statsRes, feedbackRes]) => {
+      api.get('/feedback/stats'),
+      api.get('/rag/stats')
+    ]).then(([statsRes, feedbackRes, ragRes]) => {
       setStats(statsRes.data)
       setFeedbackStats(feedbackRes.data)
+      setRagStats(ragRes.data)
     }).catch(() => navigate('/login'))
     .finally(() => setLoading(false))
   }, [navigate])
@@ -117,6 +120,30 @@ export default function Evaluation() {
                 </div>
               )
             })}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">RAG performance</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">Tickets embedded</p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">{ragStats?.total_embedded || 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">Drafts generated</p>
+              <p className="text-2xl font-semibold text-blue-600 mt-1">{ragStats?.total_drafts || 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">Draft acceptance</p>
+              <p className="text-2xl font-semibold text-green-600 mt-1">
+                {ragStats?.total_drafts > 0 ? ragStats.acceptance_rate + '%' : 'N/A'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">Drafts rejected</p>
+              <p className="text-2xl font-semibold text-red-600 mt-1">{ragStats?.rejected || 0}</p>
+            </div>
           </div>
         </div>
 
