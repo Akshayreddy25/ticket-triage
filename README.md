@@ -57,6 +57,28 @@ Near-perfect F1 reflects clean Bitext training data. Real-world tickets show mor
 - Burst injection endpoint — inject N classified tickets instantly for demos
 - Auto-refresh dashboard every 30 seconds
 
+
+## RAG Pipeline
+
+When an agent views a ticket they can generate an AI draft response:
+
+1. Current ticket is embedded using SentenceTransformers all-MiniLM-L6-v2
+2. pgvector finds the 5 most similar resolved tickets by cosine similarity
+3. Llama3.2 (local, free) generates a draft response using similar resolutions as context
+4. Agent accepts, edits, or rejects the draft
+5. Outcome tracked for evaluation
+
+### RAG Stack
+- Embeddings: SentenceTransformers all-MiniLM-L6-v2 (384 dimensions, free, local)
+- Vector store: pgvector (PostgreSQL extension)
+- LLM: Ollama llama3.2 (free, runs locally)
+- 2,769 resolved tickets embedded
+
+### RAG Metrics
+- Tickets embedded: 2,769
+- Draft acceptance rate: tracked per session
+- Citation count: 3 similar tickets per draft
+
 ## Getting Started
 
 ### Prerequisites
