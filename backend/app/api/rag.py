@@ -30,7 +30,7 @@ def get_similar_tickets(
         raise HTTPException(status_code=404, detail="Ticket not found")
 
     text = f"{ticket.subject} {ticket.description}"
-    similar = find_similar_tickets(db, text, limit=5, category=ticket.category)
+    similar = find_similar_tickets(db, text, limit=5)
 
     return {
         "ticket_id": str(ticket_id),
@@ -49,7 +49,7 @@ def generate_draft(
         raise HTTPException(status_code=404, detail="Ticket not found")
 
     text = f"{ticket.subject} {ticket.description}"
-    similar = find_similar_tickets(db, text, limit=5, category=ticket.category)
+    similar = find_similar_tickets(db, text, limit=5)
 
     if not similar:
         return {
